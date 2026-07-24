@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Administrador de Dinero</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="header">
+        <h1>Administrador de Dinero</h1>
+      </header>
+
+      <main class="main">
+        <section class="panel form-panel">
+          <form id="tx-form">
+            <div class="field">
+              <label for="amount">Monto</label>
+              <input id="amount" type="number" step="0.01" min="0" placeholder="0.00" required />
+            </div>
+
+            <div class="field">
+              <label for="category">Categoría</label>
+              <select id="category">
+                <option>Comida</option>
+                <option>Arriendo</option>
+                <option>Transporte</option>
+                <option>Entretenimiento</option>
+                <option>Ingreso</option>
+                <option>Otro</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="date">Fecha</label>
+              <input id="date" type="date" />
+            </div>
+
+            <!-- Se eliminó el selector 'Tipo'. El tipo se infiere desde la categoría ("Ingreso" => ingreso, demás => gasto) -->
+
+            <button type="submit" class="btn">Agregar</button>
+          </form>
+        </section>
+
+        <section class="panel summary-panel">
+          <div class="balance">
+            <div class="label">Balance</div>
+            <div id="balance" class="amount">$0.00</div>
+          </div>
+          <div class="totals">
+            <div class="total">
+              <small>Ingresos</small>
+              <div id="total-income" class="amount income">$0.00</div>
+            </div>
+            <div class="total">
+              <small>Gastos</small>
+              <div id="total-expense" class="amount expense">$0.00</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel list-panel">
+          <div class="list-header">
+            <h2>Movimientos</h2>
+            <div class="filter-group" role="tablist">
+              <button class="filter-btn active" data-filter="all">Todos</button>
+              <button class="filter-btn" data-filter="income">Ingresos</button>
+              <button class="filter-btn" data-filter="expense">Gastos</button>
+            </div>
+          </div>
+          <ul id="tx-list" class="tx-list"></ul>
+        </section>
+      </main>
+
+      <footer class="footer">Interfaz Ingenieria </footer>
+    </div>
+
+    <script>
+    // Inlined app.js
+    const form = document.getElementById('tx-form');
+    const amountInput = document.getElementById('amount');
+    const categoryInput = document.getElementById('category');
+    const txList = document.getElementById('tx-list');
+    const dateInput = document.getElementById('date');
+    const balanceEl = document.getElementById('balance');
+    const incomeEl = document.getElementById('total-income');
+    const expenseEl = document.getElementById('total-expense');
+
+    let transactions = JSON.parse(localStorage.getItem('transactions') || '[]');
+    let currentFilter = 'all';
+
+    function formatMoney(n){
+      const num = Number(n) || 0;
+      const sign = num < 0 ? '-' : '';
+      const formatted = Math.abs(num).toLocaleString('es-CO', {minimumFractionDigits:2, maximumFractionDigits:2});
+      return sign + '$' + formatted + ' COP';
+    }
+
+    function formatDate(ts){
+      if (!ts) return '';
+      const d = new Date(Number(ts));
+      return d.toLocaleDateString('es-CO', {day:'2-digit', month:'short', year:'numeric'});
+    }
+
+    function calcTotals(){
+      const income = transactions.filter(t=>t.type==='income').reduce((s,t)=>s+Number(t.amount),0);
+      const expense = transactions.filter(t=>t.type==='expense').reduce((s,t)=>s+Number(t.amount),0);
+      const balance = income - expense;
+      incomeEl.textContent = formatMoney(income);
+      expenseEl.textContent = formatMoney(expense);
+      balanceEl.textContent = formatMoney(balance);
+    }
+
+    function save(){
+      localStorage.setItem('transactions', JSON.stringify(transactions));
+    }
+
+    function removeTx(index){
+      transactions.splice(index,1);
+      save();
+      render();
+    }
+
+    function render(){
+      txList.innerHTML = '';
+      transactions.forEach((t,i)=>{
+        if (currentFilter !== 'all' && t.type !== currentFilter) return;
+
+        const li = document.createElement('li');
+        li.className = 'tx-item colored';
+        li.style.borderLeft = t.type === 'income' ? '6px solid var(--income)' : '6px solid var(--expense)';
+
+        const meta = document.createElement('div'); meta.className='tx-meta';
+        const cat = document.createElement('div'); cat.className='tx-cat'; cat.textContent = t.category;
+        const dateEl = document.createElement('div'); dateEl.className='tx-date'; dateEl.textContent = formatDate(t.date);
+        meta.appendChild(cat);
+        meta.appendChild(dateEl);
+
+        const amt = document.createElement('div'); amt.className='tx-amt '+(t.type==='income'?'income':'expense'); amt.textContent = formatMoney(t.amount);
+
+        const btn = document.createElement('button'); btn.className='tx-remove'; btn.textContent='Eliminar'; btn.onclick = ()=> removeTx(i);
+
+        li.appendChild(meta);
+        li.appendChild(amt);
+        li.appendChild(btn);
+
+        txList.appendChild(li);
+      });
+      calcTotals();
+    }
+
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    filterButtons.forEach(b=>{
+      b.addEventListener('click', ()=>{
+        filterButtons.forEach(x=>x.classList.remove('active'));
+        b.classList.add('active');
+        currentFilter = b.dataset.filter || 'all';
+        render();
+      });
+    });
+
+    form.addEventListener('submit', e=>{
+      e.preventDefault();
+      const amount = parseFloat(amountInput.value);
+      if (!amount || isNaN(amount)) return;
+      const category = categoryInput.value || 'Otro';
+      // Inferir tipo desde la categoría: si contiene 'ingres' asumimos ingreso
+      let type;
+      const catLower = (category || '').toLowerCase();
+      if (catLower.includes('ingres')) type = 'income'; else type = 'expense';
+      const dateVal = dateInput.value;
+      const dateTs = dateVal ? new Date(dateVal).getTime() : Date.now();
+      const tx = {amount: Math.abs(amount), category, type, date: dateTs};
+      transactions.unshift(tx);
+      save();
+      render();
+      form.reset();
+      amountInput.focus();
+    });
+
+    // initialise
+    render();
+    </script>
+  </body>
+</html>
