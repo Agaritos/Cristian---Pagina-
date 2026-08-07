@@ -1,0 +1,23 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "administracion de finanzas ",
+  "homepage": "https://github.com/Agaritos/Cristian---Pagina-#readme",
+  "bugs": {
+    "url": "https://github.com/Agaritos/Cristian---Pagina-/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Agaritos/Cristian---Pagina-.git"
+  },
+  "license": "ISC",
+  "author": "Cristian Tellez",
+  "type": "commonjs",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}
