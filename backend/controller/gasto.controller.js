@@ -1,7 +1,11 @@
-const model = require ("../model/gastos.model")
+const model = require("../model/gastos.model");
 
-class GastosController{
-
-
-    stastic async =
+class GastosController {
+  static async ConsultarGastos(request, response) {
+    const movimientos = await model.ConsultarGastos();
+    response.status(200).json({
+      data: movimientos,
+    });
+  }
 }
+module.exports = GastosController;
