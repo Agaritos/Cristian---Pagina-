@@ -6,5 +6,5 @@ const port = 3000;
 app.use("/api",router)
 
 app.listen(3000, () => {
-  console.log(`eres el mejor ${3000}`)
+  console.log(`Risitas, como te pusiste eso jeanes haces que mi mente maquineeeee${3000}`)
 })
